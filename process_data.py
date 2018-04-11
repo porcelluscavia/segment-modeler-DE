@@ -38,13 +38,12 @@ class Numberer:
     def max_number(self):
         return len(self.n2v) + 1
 
-def process_textgrid_and_wav(textgrids_dir, wavs_dir, wavs_storage_dir):
+def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, train_wavs_storage_dir):
     """
      Extracts labels from textgrid, extracts timestamps for each labeled phoneme, calls method to create create sound file for each segment in larger file
-     :returns list of labels
+     :returns list of train labels, list of test labels
      """
 
-    path = '/Users/samski/Documents/Textgrids_for_Model'
 
     try:
         labels = []
@@ -54,8 +53,10 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, wavs_storage_dir):
             if not f_name.startswith('.'):
                 print(textgrids_dir + f_name)
 
-                all_times_of_clips = []
-                labels_for_file = []
+                all_times_of_test_clips = []
+                all_times_of_train_clips = []
+                labels_for_train = []
+                labels_for_test = []
                 # instantiate a new TextGrid object
                 textGrid = praatTextGrid.PraatTextGrid(0, 0)
 
@@ -70,37 +71,58 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, wavs_storage_dir):
                 tier = arrTiers[1]
 
                 for i in range(tier.getSize()):
-                    clip_start_and_end = []
+
+
                     #interval is list of start time, end time, segment annotation, in that order
                     interval = tier.get(i)
                     if tier.getSize() <= 1:
                             #ADD this later
                         interval[2] = "NONE"
                             #get_sound_clips(wav_path,interval[0],interval[1])
-                            #print("\t", interval[2])
+                    label = interval[2]
+                    test = False
+                    if label.startswith('ASF'):
+                        test = True
+                        test_clip_start_and_end = []
+                        labels_for_test.append(label)
+                        test_clip_start_and_end.append(interval[0])
+                        test_clip_start_and_end.append(interval[1])
 
-                    clip_start_and_end.append(interval[0])
-                    clip_start_and_end.append(interval[1])
-                    all_times_of_clips.append(clip_start_and_end)
 
-                    labels_for_file.append(interval[2])
+                    else:
+                        train_clip_start_and_end = []
+                        labels_for_train.append(label)
+                        train_clip_start_and_end.append(interval[0])
+                        train_clip_start_and_end.append(interval[1])
 
-                labels.append(labels_for_file)
-                #print(labels)
+                    if test:
+                        all_times_of_test_clips.append(test_clip_start_and_end)
+                    else:
+                        all_times_of_train_clips.append(train_clip_start_and_end)
+
+
+                print(len(labels_for_test))
+                print(len(all_times_of_test_clips))
+                print(len(labels_for_train))
+                print(len(all_times_of_train_clips))
+
 
 
                 file_name_without_extension = os.path.splitext(os.path.basename(f_name))[0]
                 #check if filtering through code also creates this _band extension
                 wav_path = wavs_dir + file_name_without_extension + "_band.wav"
                 print(wav_path)
-                get_sound_clips(wav_path, all_times_of_clips, wavs_storage_dir)
+                get_sound_clips(wav_path, all_times_of_test_clips, test_wavs_storage_dir, train_wavs_storage_dir)
 
     except OSError:
     # If directory has already been created or is inaccessible
-        if not os.path.exists(path):
+        if not os.path.exists(textgrids_dir):
             sys.exit("Error opening given textgrid file path")
 
-    return labels
+    return labels_for_train, labels_for_test
+
+
+
 
 def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=True):
     """
@@ -117,18 +139,31 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
         # if not already_filtered:
         #     praatUtil.applyBandPassFilter(wav_path, 50,20000,20)
 
+        durations = []
+
         for clip_time in clip_times:
 
             start = clip_time[0]
             end = clip_time[1]
 
-            start_time_in_ms = start * 1000
-            end_time_in_ms = end * 1000
+            duration = end - start
+
+
+            #reject clips equal to or over 2 seconds long
+            if duration < 2:
+
+                start_time_in_ms = start * 1000
+                end_time_in_ms = end * 1000
+
+            #get out the test set!!!!!
+            #get out uterances over a certain length!!
 
             phoneme_segment = song[start_time_in_ms:end_time_in_ms]
 
             wav_name = wav_name_without_extension + str(start) + ".wav"
             phoneme_segment.export(wavs_storage_dir + wav_name, format="wav")
+
+
 
     except OSError:
         # If directory has already been created or is inaccessible
@@ -140,11 +175,14 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
     return
 
 
-def mfcc_batch_maker(wavs_storage_dir, labels):
+def mfcc_batch_maker(wavs_storage_dir,labels):
+
+
     #number the labels
     #padded/zeroed np arrays
     #leave one-hotting to ryan
     # mfcc's of each segment
+    #librosa or the other one?
     #make sure everything matches up!
 
 
@@ -161,14 +199,21 @@ if '__main__' == __name__:
     Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'
     '''
     #remove hardcoded paths later
-    textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model'
+    textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model/'
     wavs_dir = '/Users/samski/Documents/Wavs_for_Model/'
     #add error handing os.exist for this! must exist!
-    wavs_storage_dir = "/Users/samski/Documents/Wavs_for_Model2/"
+    train_wavs_storage_dir = "/Users/samski/Documents/Wavs_for_Model2/"
+    test_wavs_storage_dir = "/Users/samski/Documents/Wavs_for_Model2/"
 
-   
 
-    clip_times = process_textgrid_and_wav(textgrids_dir, wavs_dir, wavs_storage_dir)
+    labels = process_textgrid_and_wav(textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir)
+
+    train_labels = labels[0]
+    test_labels = labels[1]
+
+    train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
+    test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
+
 
 
 
