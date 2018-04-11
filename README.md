@@ -1,5 +1,5 @@
 # segment-modeler-DE
-using a neural network for prediction of German phonemes in audio files
+a neural network-based approach for the prediction of German phonemes in audio files using both spectrogram data and Mel-frequency cepstral coefficients (MFCCs)
 
 
 Sources: 
