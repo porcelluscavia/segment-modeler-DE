@@ -5,6 +5,8 @@ using a neural network for prediction of German phonemes in audio files
 Sources: 
 - https://www.tensorflow.org/versions/master/tutorials/audio_recognition
 
+- https://github.com/llSourcell/tensorflow_speech_recognition_demo
+
 - https://www.isca-speech.org/archive/interspeech_2015/papers/i15_1478.pdf
 
 - https://arxiv.org/pdf/1303.5778.pdf
