@@ -1,8 +1,9 @@
 # segment-modeler-DE
-using a neural network for prediction of German phonemes in audio files
+a neural network-based approach for the prediction of German phonemes in audio files using both spectrogram data and Mel-frequency cepstral coefficients (MFCCs)
 
 
 Sources: 
+- http://www.kiranjose.in/blogs/getting-started-with-tensorflow-speech-recognition-api-and-object-detection-api/
 - https://www.tensorflow.org/versions/master/tutorials/audio_recognition
 
 - https://github.com/llSourcell/tensorflow_speech_recognition_demo
