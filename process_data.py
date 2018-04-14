@@ -7,8 +7,14 @@ import praatTextGrid
 from pydub import AudioSegment
 import os
 import sys
+import numpy as np
+from scipy.io import wavfile
 #import praatUtil
 import scipy.io.wavfile as wav
+
+
+X_SIZE = 16000
+IMG_SIZE = 64
 
 
 AudioSegment.ffmpeg = "/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/multimedia/ffmpeg"
@@ -112,7 +118,10 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
                 #check if filtering through code also creates this _band extension
                 wav_path = wavs_dir + file_name_without_extension + "_band.wav"
                 print(wav_path)
-                get_sound_clips(wav_path, all_times_of_test_clips, test_wavs_storage_dir, train_wavs_storage_dir)
+                get_sound_clips(wav_path, all_times_of_test_clips, test_wavs_storage_dir)
+                if all_times_of_train_clips:
+                    get_sound_clips(wav_path, all_times_of_train_clips, train_wavs_storage_dir)
+
 
     except OSError:
     # If directory has already been created or is inaccessible
@@ -158,10 +167,10 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
             #get out the test set!!!!!
             #get out uterances over a certain length!!
 
-            phoneme_segment = song[start_time_in_ms:end_time_in_ms]
+                phoneme_segment = song[start_time_in_ms:end_time_in_ms]
 
-            wav_name = wav_name_without_extension + str(start) + ".wav"
-            phoneme_segment.export(wavs_storage_dir + wav_name, format="wav")
+                wav_name = wav_name_without_extension + str(start) + ".wav"
+                phoneme_segment.export(wavs_storage_dir + wav_name, format="wav")
 
 
 
@@ -175,7 +184,7 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
     return
 
 
-def mfcc_batch_maker(wavs_storage_dir,labels):
+def mfcc_batch_maker(wavs_storage_dir, labels):
 
 
     #number the labels
@@ -190,6 +199,36 @@ def mfcc_batch_maker(wavs_storage_dir,labels):
 
     return
 
+#source: https://github.com/microic/niy/tree/master/examples/speech_commands_spectrogram
+#seems to
+def spectrogram(wav_dir):
+    list_of_specs = []
+    for wav_file in os.listdir(wav_dir):
+        framerate, wav_data = wavfile.read(wav_dir + wav_file)
+
+        window_length = 512
+        window_shift = 121
+
+        if len(wav_data) > X_SIZE:
+            wav_data = wav_data[:X_SIZE]
+
+        X = np.zeros(X_SIZE).astype('float32')
+        X[:len(wav_data)] += wav_data
+        spec = np.zeros((IMG_SIZE, IMG_SIZE)).astype('float32')
+
+        for i in range(IMG_SIZE):
+            start = i * window_shift
+            end = start + window_length
+            sig = np.abs(np.fft.rfft(X[start:end] * np.hanning(window_length)))
+            spec[:,i] = (sig[1:IMG_SIZE + 1])[::-1]
+
+        spec = (spec-spec.min())/(spec.max()-spec.min())
+        spec = np.log10((spec * 100 + 0.01))
+        spec = (spec-spec.min())/(spec.max()-spec.min()) - 0.5
+        list_of_specs.append(spec)
+
+    return list_of_specs
+
 
 if '__main__' == __name__:
     #  MAKE SURE TO ADD DEFAULT FILTERED
@@ -202,8 +241,8 @@ if '__main__' == __name__:
     textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model/'
     wavs_dir = '/Users/samski/Documents/Wavs_for_Model/'
     #add error handing os.exist for this! must exist!
-    train_wavs_storage_dir = "/Users/samski/Documents/Wavs_for_Model2/"
-    test_wavs_storage_dir = "/Users/samski/Documents/Wavs_for_Model2/"
+    train_wavs_storage_dir = "/Users/samski/Documents/Train_Wavs/"
+    test_wavs_storage_dir = "/Users/samski/Documents/Test_Wavs/"
 
 
     labels = process_textgrid_and_wav(textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir)
@@ -214,6 +253,8 @@ if '__main__' == __name__:
     train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
     test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
 
+    all_specs = spectrogram(test_wavs_storage_dir)
 
+    print(all_specs)
 
 
