@@ -52,7 +52,8 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
 
 
     try:
-        labels = []
+        all_train_labels = []
+        all_test_labels = []
         for f_name in os.listdir(textgrids_dir):
             print("hello")
             #silly mac makes hidden configuration files that need to be ignored
@@ -111,6 +112,8 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
                 print(len(all_times_of_test_clips))
                 print(len(labels_for_train))
                 print(len(all_times_of_train_clips))
+                all_test_labels.append(labels_for_test)
+                all_train_labels.append(labels_for_train)
 
 
 
@@ -128,7 +131,7 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
         if not os.path.exists(textgrids_dir):
             sys.exit("Error opening given textgrid file path")
 
-    return labels_for_train, labels_for_test
+    return all_train_labels, all_test_labels
 
 
 
@@ -250,11 +253,14 @@ if '__main__' == __name__:
     train_labels = labels[0]
     test_labels = labels[1]
 
+    print(train_labels)
+    print(test_labels)
+
     train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
     test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
 
     all_specs = spectrogram(test_wavs_storage_dir)
 
-    print(all_specs)
+    #print(all_specs)
 
 
