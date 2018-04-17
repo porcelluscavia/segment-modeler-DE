@@ -19,34 +19,11 @@ IMG_SIZE = 64
 
 AudioSegment.ffmpeg = "/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/multimedia/ffmpeg"
 
-#from Daniel de Kok's Deep Learning Course
-class Numberer:
-    def __init__(self):
-        self.v2n = dict()
-        self.n2v = list()
-        self.start_idx = 1
-
-    def number(self, value, add_if_absent=True):
-        n = self.v2n.get(value)
-
-        if n is None:
-            if add_if_absent:
-                n = len(self.n2v) + self.start_idx
-                self.v2n[value] = n
-                self.n2v.append(value)
-            else:
-                return 0
-        return n
-
-    def value(self, number):
-        self.n2v[number - 1]
-
-    def max_number(self):
-        return len(self.n2v) + 1
 
 def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, train_wavs_storage_dir):
     """
      Extracts labels from textgrid, extracts timestamps for each labeled phoneme, calls method to create create sound file for each segment in larger file
+
      :returns list of train labels, list of test labels
      """
 
@@ -74,11 +51,10 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
                 if numTiers != 2:
                     raise Exception("we expect two tiers in this file")
 
-                    #use segments tier
+                    #use segments tier, the second tier in our textgrid file
                 tier = arrTiers[1]
 
                 for i in range(tier.getSize()):
-
 
                     #interval is list of start time, end time, segment annotation, in that order
                     interval = tier.get(i)
@@ -108,10 +84,10 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
                         all_times_of_train_clips.append(train_clip_start_and_end)
 
 
-                print(len(labels_for_test))
-                print(len(all_times_of_test_clips))
-                print(len(labels_for_train))
-                print(len(all_times_of_train_clips))
+                # print(len(labels_for_test))
+                # print(len(all_times_of_test_clips))
+                # print(len(labels_for_train))
+                # print(len(all_times_of_train_clips))
                 all_test_labels.append(labels_for_test)
                 all_train_labels.append(labels_for_train)
 
@@ -141,8 +117,6 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
     Breaks existing sound files into many small wave files, one for each segment
     :returns nothing
     """
-    #use input from NLP class
-
 
     try:
         song = AudioSegment.from_wav(wav_path)
@@ -151,7 +125,6 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
         # if not already_filtered:
         #     praatUtil.applyBandPassFilter(wav_path, 50,20000,20)
 
-        durations = []
 
         for clip_time in clip_times:
 
@@ -166,9 +139,6 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
 
                 start_time_in_ms = start * 1000
                 end_time_in_ms = end * 1000
-
-            #get out the test set!!!!!
-            #get out uterances over a certain length!!
 
                 phoneme_segment = song[start_time_in_ms:end_time_in_ms]
 
@@ -187,23 +157,9 @@ def get_sound_clips(wav_path, clip_times, wavs_storage_dir, already_filtered=Tru
     return
 
 
-def mfcc_batch_maker(wavs_storage_dir, labels):
-
-
-    #number the labels
-    #padded/zeroed np arrays
-    #leave one-hotting to ryan
-    # mfcc's of each segment
-    #librosa or the other one?
-    #make sure everything matches up!
-
-
-
-
-    return
 
 #source: https://github.com/microic/niy/tree/master/examples/speech_commands_spectrogram
-#seems to
+
 def spectrogram(wav_dir):
     list_of_specs = []
     for wav_file in os.listdir(wav_dir):
@@ -227,25 +183,47 @@ def spectrogram(wav_dir):
 
         spec = (spec-spec.min())/(spec.max()-spec.min())
         spec = np.log10((spec * 100 + 0.01))
-        spec = (spec-spec.min())/(spec.max()-spec.min()) - 0.5
+        spec = (spec-spec.min())/(spec.max()-spec.min())
         list_of_specs.append(spec)
 
     return list_of_specs
 
 
+
+def mfcc_batch_maker(wavs_storage_dir, labels):
+
+
+    #number the labels
+    #padded/zeroed np arrays
+    #leave one-hotting to ryan
+    # mfcc's of each segment
+    #librosa or the other one?
+    #make sure everything matches up!
+
+
+    return
+
+
 if '__main__' == __name__:
     #  MAKE SURE TO ADD DEFAULT FILTERED
+
+    try:
+        textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir = sys.argv[1:]
+    except ValueError:
+        sys.exit("{} textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir; Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'".format(sys.argv[0]))
+
+
     '''
     The way it's set up is that you have one directory with textgrids and one directory with wave files of the exact same name that have been filtered beforehand in Praat, 
     and thus have '_band' appended to the base name 
     Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'
     '''
-    #remove hardcoded paths later
-    textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model/'
-    wavs_dir = '/Users/samski/Documents/Wavs_for_Model/'
-    #add error handing os.exist for this! must exist!
-    train_wavs_storage_dir = "/Users/samski/Documents/Train_Wavs/"
-    test_wavs_storage_dir = "/Users/samski/Documents/Test_Wavs/"
+    # #remove hardcoded paths later
+    # textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model/'
+    # wavs_dir = '/Users/samski/Documents/Wavs_for_Model/'
+    # #add error handing os.exist for this! must exist!
+    # train_wavs_storage_dir = "/Users/samski/Documents/Train_Wavs/"
+    # test_wavs_storage_dir = "/Users/samski/Documents/Test_Wavs/"
 
 
     labels = process_textgrid_and_wav(textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir)
@@ -253,14 +231,14 @@ if '__main__' == __name__:
     train_labels = labels[0]
     test_labels = labels[1]
 
-    print(train_labels)
-    print(test_labels)
+    # print(train_labels)
+    # print(test_labels)
 
-    train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
-    test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
+    # train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
+    # test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
 
     all_specs = spectrogram(test_wavs_storage_dir)
 
-    #print(all_specs)
+    # print(all_specs)
 
 
