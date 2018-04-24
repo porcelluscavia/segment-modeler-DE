@@ -4,20 +4,20 @@ class Config:
     """
     # Training Parameters
     learning_rate = 0.001
-    num_steps = 2000
     dropout = 0.25
-    epochs = 10
-    test_size = 0.33
+    epochs = 1
+    test_size = 0.2
     # Where the model and info is logged
     logdir = './models'
     # Where the training data is located
-    datadir = 'data/spoken_numbers_64x64'
+    datadir = 'C:/Users/ryanc/Dropbox/segment-modeler-DE/kiel_corpus'
+    shuffle = False
 
     # Network Parameters
-    batch_size = 128
-    num_classes = 10
-    # IMPORTANT: filter_size and kernals must be in arrays of the same length.
-    filter_size = [16, 32, 64]
-    kernels = [5, 5, 3]
+    batch_size = 512
+    hidden_sizes = [128, 68]
+
+    # Data Params
+    frame_size = 0.025
 
 
