@@ -1,48 +1,42 @@
 import tensorflow as tf
-from processing import spectro_batch_generator
-from config import Config
-from model_architecture import Model
+from segment_modeler_DNN.segmenter_rnn.sampa_utils import SampaMapping
+from segment_modeler_DNN.segmenter_rnn.config import Config
+from segment_modeler_DNN.segmenter_rnn.model import Model
+from segment_modeler_DNN.segmenter_rnn.mfcc_extraction import mfcc_features
 
-num_classes = 10
 
-
-def predict(datadir):
+def predict(features):
     """
-    Predicts labels, logits, and probabilties of spectrograms in folder.
+    Predicts labels, logits, and probabilties.
     :param datadir:
     :return:
     """
-    model = Model(Config, num_classes)
-
-    X, Y = spectro_batch_generator(datadir,
-                                   shuffle_files=False)  # TODO change from getting all files in a dir to passing wav files.
-
-    estimator = tf.estimator.Estimator(model_fn=model.model_fn, model_dir=Config.logdir,
+    model = Model(Config, len(SampaMapping.sampa_map.keys())+1)
+    estimator = tf.estimator.Estimator(model_fn=model.model_fn, model_dir='C:/Users/ryanc/Dropbox/segment-modeler-DE/segment_modeler_DNN/models',
                                        config=tf.estimator.RunConfig().replace(save_summary_steps=10))
-
-    if len(X.shape) != 3:
-        X = tf.expand_dims(X, 0)
-
     input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'images': X}, shuffle=False)
-
+        x={'features': features}, shuffle=False)
     return estimator.predict(input_fn)
 
 
+def transform_data_mfcc(wavpath):
+    """
+    Fetches mfcc features from wav file.
+    :param wavpath:
+    :return: (mfcc_features, time_indices)
+    """
+    return mfcc_features(wavpath)
+
+
 if __name__ == '__main__':
-    testdir = 'data/test_folder_single'
+    wavpath = 'C:/Users/ryanc/Dropbox/segment-modeler-DE/kiel_corpus/DLME088.wav'
 
-    prediction = predict(testdir)
+    features, times = transform_data_mfcc(wavpath)
+    prediction = predict(features)
 
-    pred = next(prediction)
-
-    # Should be '9'
-    print('PREDICTED: %s | GS: %s' % (str(pred['class_ids'][0]), str(9)))
-
-    testdir = 'data/test_folder_multi'
-
-    prediction = predict(testdir)
-
-    while True: # TODO Change this. Doesnt work.
-        pred = next(prediction)
-        print('PREDICTED: %s' % str(pred['class_ids'][0]))
+    from itertools import groupby
+    preds1 = [i['class_ids'] for i in prediction]
+    preds2 = [i[0][0] for i in groupby(preds1)]
+    preds3 = [SampaMapping.sampa_map_from_idx[i] for i in preds2]
+    pred4 = [i for i in preds3 if i != '<p>']
+    print(''.join(pred4))
