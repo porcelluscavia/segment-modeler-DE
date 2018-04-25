@@ -53,7 +53,7 @@ def labels_from_samples(feature_times, sampa, sample_times):
             idx += 1
             sampa_current = sampa[idx]
         labels.append(sampa_current)
-    return np.array([SampaMapping.sampa_map[s] for s in labels])
+    return np.array([SampaMapping.sampa_map_to_idx[s] for s in labels])
 
 
 def features_and_labels_from_file_kiel(wav_path, s1h_path):

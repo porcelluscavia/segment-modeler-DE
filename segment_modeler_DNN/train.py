@@ -20,9 +20,9 @@ Training method for model. All configurations can be edited in config_CNN.py
 
 ####### LOAD AND PROCESS DATA #########
 
-trainX, testX, trainY, testY = features_and_labels_from_dir_kiel(Config.datadir)
+testX, trainX, testY, trainY = features_and_labels_from_dir_kiel(Config.datadir)
 
-num_classes = len(SampaMapping.sampa_map.keys()) + 1
+num_classes = len(SampaMapping.sampa_map_to_idx.keys()) + 1
 print("NUM CLASSES:", num_classes)
 
 ######## BUILD MODEL ############
@@ -49,8 +49,10 @@ input_fn_test = tf.estimator.inputs.numpy_input_fn(
 ####### TRAIN MODEL ########
 # Train the Model
 num_steps = int(trainX.shape[0] / Config.batch_size)
+print('NUM STEPS', num_steps)
+
 for epoch in range(Config.epochs):
-    estimator.train(input_fn_train, steps=None)
+    estimator.train(input_fn_train, steps=num_steps)
 
     ####### EVALUATE ON TEST DATA ##########
     e = estimator.evaluate(input_fn_test)
