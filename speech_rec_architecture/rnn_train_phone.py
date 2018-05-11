@@ -16,16 +16,16 @@ def main(arg_parser):
     features, labels = mfcc_features_and_labels_from_dir_kiel(Config.datadir, Config.frame_size,
                                                               num_files=Config.num_files)
 
-    if Config.mode_of_articulation:
-        x = []
-        for i, y in enumerate(labels):
-            moa_idx = SampaMapping.moa2idx[SampaMapping.sampa2moa[SampaMapping.idx2sampa[y]]]
-            poa_idx = SampaMapping.poa2idx[SampaMapping.sampa2poa[SampaMapping.idx2sampa[y]]]
-            x.append(np.append(np.append(features[i], moa_idx), poa_idx))
-            # Y[i] = moa_idx
-        features = x
-    features = np.float32(np.array(features))
-    labels = np.array(labels)
+#     if Config.mode_of_articulation:
+#         x = []
+#         for i, y in enumerate(labels):
+#             moa_idx = SampaMapping.moa2idx[SampaMapping.sampa2moa[SampaMapping.idx2sampa[y]]]
+#             poa_idx = SampaMapping.poa2idx[SampaMapping.sampa2poa[SampaMapping.idx2sampa[y]]]
+#             x.append(np.append(np.append(features[i], moa_idx), poa_idx))
+#             # Y[i] = moa_idx
+#         features = x
+#     features = np.float32(np.array(features))
+#     labels = np.array(labels)
 
     train(features, labels, Config)
 
