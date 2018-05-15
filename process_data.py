@@ -20,20 +20,20 @@ IMG_SIZE = 64
 AudioSegment.ffmpeg = "/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/multimedia/ffmpeg"
 
 
-def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, train_wavs_storage_dir):
+
+def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir=None, train_wavs_storage_dir=None,
+                             wavs_exist=True):
     """
      Extracts labels from textgrid, extracts timestamps for each labeled phoneme, calls method to create create sound file for each segment in larger file
 
      :returns list of train labels, list of test labels
      """
 
-
     try:
         all_train_labels = []
         all_test_labels = []
         for f_name in os.listdir(textgrids_dir):
-            print("hello")
-            #silly mac makes hidden configuration files that need to be ignored
+            # silly mac makes hidden configuration files that need to be ignored
             if not f_name.startswith('.'):
                 print(textgrids_dir + f_name)
 
@@ -51,63 +51,52 @@ def process_textgrid_and_wav(textgrids_dir, wavs_dir, test_wavs_storage_dir, tra
                 if numTiers != 2:
                     raise Exception("we expect two tiers in this file")
 
-                    #use segments tier, the second tier in our textgrid file
+                    # use segments tier, the second tier in our textgrid file
                 tier = arrTiers[1]
 
                 for i in range(tier.getSize()):
 
-                    #interval is list of start time, end time, segment annotation, in that order
+                    # interval is list of start time, end time, segment annotation, in that order
                     interval = tier.get(i)
                     if tier.getSize() <= 1:
-                            #ADD this later
+                        # ADD this later
                         interval[2] = "NONE"
-                            #get_sound_clips(wav_path,interval[0],interval[1])
+                        # get_sound_clips(wav_path,interval[0],interval[1])
                     label = interval[2]
                     test = False
                     if label.startswith('ASF'):
                         test = True
-                        test_clip_start_and_end = []
+                        # test_clip_start_and_end = []
                         labels_for_test.append(label)
-                        test_clip_start_and_end.append(interval[0])
-                        test_clip_start_and_end.append(interval[1])
+                        all_times_of_test_clips.append(interval[0] * 10000)
+                        # test_clip_start_and_end.append(interval[1]*10000)
 
 
                     else:
-                        train_clip_start_and_end = []
+                        label = SampaMapping.sampa_correction_map[label]
                         labels_for_train.append(label)
-                        train_clip_start_and_end.append(interval[0])
-                        train_clip_start_and_end.append(interval[1])
+                        all_times_of_train_clips.append(interval[0] * 10000)
 
-                    if test:
-                        all_times_of_test_clips.append(test_clip_start_and_end)
-                    else:
-                        all_times_of_train_clips.append(train_clip_start_and_end)
-
-
-                # print(len(labels_for_test))
-                # print(len(all_times_of_test_clips))
-                # print(len(labels_for_train))
-                # print(len(all_times_of_train_clips))
                 all_test_labels.append(labels_for_test)
                 all_train_labels.append(labels_for_train)
 
-
-
                 file_name_without_extension = os.path.splitext(os.path.basename(f_name))[0]
-                #check if filtering through code also creates this _band extension
+                # check if filtering through code also creates this _band extension
                 wav_path = wavs_dir + file_name_without_extension + "_band.wav"
-                print(wav_path)
-                get_sound_clips(wav_path, all_times_of_test_clips, test_wavs_storage_dir)
-                if all_times_of_train_clips:
-                    get_sound_clips(wav_path, all_times_of_train_clips, train_wavs_storage_dir)
+                # print(wav_path)
+
+                if not wavs_exist:
+                    get_sound_clips(wav_path, all_times_of_test_clips, test_wavs_storage_dir)
+                    if all_times_of_train_clips:
+                        get_sound_clips(wav_path, all_times_of_train_clips, train_wavs_storage_dir)
 
 
     except OSError:
-    # If directory has already been created or is inaccessible
+        # If directory has already been created or is inaccessible
         if not os.path.exists(textgrids_dir):
             sys.exit("Error opening given textgrid file path")
 
-    return all_train_labels, all_test_labels
+    return (all_train_labels, all_times_of_train_clips), (all_test_labels, all_times_of_test_clips)
 
 
 
@@ -204,41 +193,41 @@ def mfcc_batch_maker(wavs_storage_dir, labels):
     return
 
 
-if '__main__' == __name__:
-    #  MAKE SURE TO ADD DEFAULT FILTERED
+# if '__main__' == __name__:
+#     #  MAKE SURE TO ADD DEFAULT FILTERED
 
-    try:
-        textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir = sys.argv[1:]
-    except ValueError:
-        sys.exit("{} textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir; Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'".format(sys.argv[0]))
-
-
-    '''
-    The way it's set up is that you have one directory with textgrids and one directory with wave files of the exact same name that have been filtered beforehand in Praat, 
-    and thus have '_band' appended to the base name 
-    Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'
-    '''
-    # #remove hardcoded paths later
-    # textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model/'
-    # wavs_dir = '/Users/samski/Documents/Wavs_for_Model/'
-    # #add error handing os.exist for this! must exist!
-    # train_wavs_storage_dir = "/Users/samski/Documents/Train_Wavs/"
-    # test_wavs_storage_dir = "/Users/samski/Documents/Test_Wavs/"
+#     try:
+#         textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir = sys.argv[1:]
+#     except ValueError:
+#         sys.exit("{} textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir; Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'".format(sys.argv[0]))
 
 
-    labels = process_textgrid_and_wav(textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir)
+#     '''
+#     The way it's set up is that you have one directory with textgrids and one directory with wave files of the exact same name that have been filtered beforehand in Praat, 
+#     and thus have '_band' appended to the base name 
+#     Make sure the slashes are in this format (slash on end as well): '/Users/samski/Documents/Wavs_for_Model/'
+#     '''
+#     # #remove hardcoded paths later
+#     # textgrids_dir = '/Users/samski/Documents/Textgrids_for_Model/'
+#     # wavs_dir = '/Users/samski/Documents/Wavs_for_Model/'
+#     # #add error handing os.exist for this! must exist!
+#     # train_wavs_storage_dir = "/Users/samski/Documents/Train_Wavs/"
+#     # test_wavs_storage_dir = "/Users/samski/Documents/Test_Wavs/"
 
-    train_labels = labels[0]
-    test_labels = labels[1]
 
-    # print(train_labels)
-    # print(test_labels)
+#     labels = process_textgrid_and_wav(textgrids_dir, wavs_dir, train_wavs_storage_dir, test_wavs_storage_dir)
 
-    # train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
-    # test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
+#     train_labels = labels[0]
+#     test_labels = labels[1]
 
-    all_specs = spectrogram(test_wavs_storage_dir)
+#     # print(train_labels)
+#     # print(test_labels)
 
-    # print(all_specs)
+#     # train_mfccs = mfcc_batch_maker(train_wavs_storage_dir, train_labels)
+#     # test_mfccs = mfcc_batch_maker(test_wavs_storage_dir, test_labels)
+
+#     all_specs = spectrogram(test_wavs_storage_dir)
+
+#     # print(all_specs)
 
 
